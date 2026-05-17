@@ -1,0 +1,8 @@
+{
+  "name": "mcp-station",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
