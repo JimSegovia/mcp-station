@@ -25,10 +25,19 @@ export default function McpIntegration() {
   }, [load]);
 
   useEffect(() => {
-    if (status !== "connecting" && status !== "connected") return;
+    if (
+      status !== "connecting" &&
+      status !== "connected" &&
+      status !== "disconnected"
+    ) {
+      return;
+    }
     const interval = setInterval(load, 1500);
     return () => clearInterval(interval);
   }, [status, load]);
+
+  const showRecoveryState =
+    status === "error" || status === "disconnected";
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -79,7 +88,7 @@ export default function McpIntegration() {
         </>
       )}
 
-      {status === "error" && (
+      {showRecoveryState && (
         <>
           <ConnectionStatusCard />
           <McpServerRuntimeCard />
@@ -93,7 +102,7 @@ export default function McpIntegration() {
           </div>
           <div className="flex gap-3">
             <Button className="flex-1" onClick={connect}>
-              Reintentar conexion
+              {status === "disconnected" ? "Reconectar ahora" : "Reintentar conexion"}
             </Button>
             <Button variant="outline" className="flex-1" onClick={disconnect}>
               Reiniciar

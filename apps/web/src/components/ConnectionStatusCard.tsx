@@ -18,6 +18,7 @@ const statusConfig: Record<
   empty: { label: "Sin configurar", variant: "secondary" },
   connecting: { label: "Conectando...", variant: "warning" },
   connected: { label: "Conectado", variant: "success" },
+  disconnected: { label: "Reconectando", variant: "warning" },
   error: { label: "Error", variant: "destructive" },
 };
 
@@ -36,6 +37,21 @@ export default function ConnectionStatusCard() {
   if (status === "empty") return null;
 
   const cfg = statusConfig[status];
+
+  const endpointLevel =
+    status === "connected"
+      ? "healthy"
+      : status === "connecting" || status === "disconnected"
+        ? "pending"
+        : "unhealthy";
+  const endpointLabel =
+    status === "connected"
+      ? "Endpoint vivo"
+      : status === "connecting"
+        ? "Handshake en progreso"
+        : status === "disconnected"
+          ? "Reintentando"
+          : "Sin respuesta";
 
   return (
     <Card>
@@ -60,8 +76,8 @@ export default function ConnectionStatusCard() {
           <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
             <span>Latencia: {latency}ms</span>
             <HealthIndicator
-              level={status === "connected" ? "healthy" : "unhealthy"}
-              label={status === "connected" ? "Endpoint vivo" : "Sin respuesta"}
+              level={endpointLevel}
+              label={endpointLabel}
               size="sm"
             />
           </div>

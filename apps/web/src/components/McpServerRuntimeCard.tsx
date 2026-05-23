@@ -30,7 +30,7 @@ export default function McpServerRuntimeCard() {
     healthChecks,
   } = useMcpIntegrationStore();
 
-  if (status !== "connected" && status !== "error") return null;
+  if (status === "empty") return null;
 
   const healthyCount = healthChecks.filter((h) => h.level === "healthy").length;
   const degradedCount = healthChecks.filter((h) => h.level === "degraded").length;
@@ -44,7 +44,7 @@ export default function McpServerRuntimeCard() {
           Servidor MCP local
         </CardTitle>
         <CardDescription>
-          Runtime local · puerto {serverPort} · {protocolVersion}
+          Runtime local / puerto {serverPort} / {protocolVersion}
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -48,7 +48,10 @@ export default function ToolTestPanel() {
 
   useEffect(() => {
     fetch("/api/tools")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load tools");
+        return r.json();
+      })
       .then((data: ToolGroup[]) => setGroups(data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -64,14 +67,16 @@ export default function ToolTestPanel() {
     const startTime = performance.now();
     setRunning(true);
 
-    const ws = new WebSocket(`ws://${location.host}/ws`);
-    let requestId = 1;
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${protocol}://${location.host}/ws`);
+    const initId = 1;
+    const callId = 2;
 
     ws.onopen = () => {
       ws.send(
         JSON.stringify({
           jsonrpc: "2.0",
-          id: requestId,
+          id: initId,
           method: "initialize",
           params: {},
         })
@@ -81,18 +86,25 @@ export default function ToolTestPanel() {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
 
-      if (msg.id === requestId && msg.result?.protocolVersion) {
-        requestId++;
+      if (msg.id === initId && msg.result?.protocolVersion) {
+        ws.send(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            method: "notifications/initialized",
+          })
+        );
+
         let parsedParams: Record<string, unknown> = {};
         try {
           parsedParams = JSON.parse(params || "{}");
         } catch {
           parsedParams = {};
         }
+
         ws.send(
           JSON.stringify({
             jsonrpc: "2.0",
-            id: requestId,
+            id: callId,
             method: "tools/call",
             params: { name: selectedTool, arguments: parsedParams },
           })
@@ -100,7 +112,7 @@ export default function ToolTestPanel() {
         return;
       }
 
-      if (msg.id === requestId) {
+      if (msg.id === callId) {
         const duration = Math.round(performance.now() - startTime);
         let resultText = "";
         if (msg.result?.content?.[0]?.text) {
@@ -178,7 +190,7 @@ export default function ToolTestPanel() {
               Selecciona una tool...
             </option>
             {groups.map((g) => (
-              <optgroup key={g.origin} label={`━━ ${g.origin}`}>
+              <optgroup key={g.origin} label={`-- ${g.origin}`}>
                 {g.tools
                   .filter((t) => t.enabled)
                   .map((t) => (
