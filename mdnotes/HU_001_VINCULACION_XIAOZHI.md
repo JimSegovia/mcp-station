@@ -223,50 +223,50 @@ Si la conexion falla, la pantalla debe mostrar:
 
 ## Tareas funcionales
 
-- registrar un `MCP endpoint` oficial asociado al agente
-- levantar un servidor MCP local compatible
-- conectar el servidor MCP local al endpoint oficial
-- exponer al menos una tool util
-- detectar si la conexion esta activa o no
-- reflejar el estado en la interfaz
+- registrar un `MCP endpoint` oficial asociado al agente ✅
+- levantar un servidor MCP local compatible ✅
+- conectar el servidor MCP local al endpoint oficial ✅
+- exponer al menos una tool util ✅
+- detectar si la conexion esta activa o no ✅
+- reflejar el estado en la interfaz ✅
 
 ## Tareas de backend
 
-- crear el modulo `mcp-endpoint-registry`
-- crear el modulo `mcp-server-runtime`
-- implementar configuracion del endpoint oficial
-- implementar conexion y reconexion al endpoint
-- implementar registro de tools locales
-- crear un servicio de estado para:
-  - `connected`
-  - `disconnected`
-  - `error`
-  - `last_connected_at`
+- crear el modulo `mcp-endpoint-registry` ✅
+- crear el modulo `mcp-server-runtime` ✅
+- implementar configuracion del endpoint oficial ✅
+- implementar conexion y reconexion al endpoint ✅
+- implementar registro de tools locales ✅
+- crear un servicio de estado para: ✅
+  - `connected` ✅
+  - `disconnected` ✅
+  - `error` ✅
+  - `last_connected_at` ✅
 
 ## Tareas de almacenamiento
 
-- definir la tabla o estructura local para endpoints MCP
-- guardar:
-  - identificador local
-  - endpoint
-  - nombre visible
-  - ultimo estado
-  - ultima conexion
-  - ultimo error
-  - metadata basica disponible
+- definir la tabla o estructura local para endpoints MCP ✅
+- guardar: ✅
+  - identificador local ✅
+  - endpoint ✅
+  - nombre visible ✅
+  - ultimo estado ✅
+  - ultima conexion ✅
+  - ultimo error ✅
+  - metadata basica disponible ✅
 
 ## Tareas de observabilidad
 
-- registrar en logs cuando se intenta conectar el endpoint
-- registrar cuando la conexion fue exitosa
-- registrar cuando falla la conexion o el registro de tools
-- registrar que tools fueron expuestas
+- registrar en logs cuando se intenta conectar el endpoint ✅
+- registrar cuando la conexion fue exitosa ✅
+- registrar cuando falla la conexion o el registro de tools ✅
+- registrar que tools fueron expuestas ✅
 
 ## Tareas de validacion
 
 - probar conexion con un endpoint oficial real de XiaoZhi
-- verificar que el estado cambie correctamente en la interfaz
-- verificar que al menos una tool quede visible y usable
+- verificar que el estado cambie correctamente en la interfaz ✅
+- verificar que al menos una tool quede visible y usable ✅
 - verificar comportamiento de reconexion y error
 
 ## Riesgos de esta historia

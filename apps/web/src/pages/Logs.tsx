@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLogStore } from "@/store/logStore";
 import LogEntryRow from "@/components/LogEntry";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2 } from "lucide-react";
 
 export default function Logs() {
-  const { logs, clearLogs } = useLogStore();
+  const { logs, load, clearLogs } = useLogStore();
+
+  useEffect(() => {
+    load({ limit: 50 });
+  }, [load]);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -39,12 +44,11 @@ export default function Logs() {
 
       <div className="flex items-center gap-3">
         <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">demo</span>
+        <span className="text-xs text-muted-foreground">debug</span>
         <Separator className="flex-1" />
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        Logs mock para validar la UI. El backend Go producira entradas reales
-        de ejecucion, conexion y errores.
+        Logs sincronizados en tiempo real desde el backend Go.
       </p>
     </div>
   );

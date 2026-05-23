@@ -12,64 +12,46 @@ export interface LogEntry {
   result: LogResult;
 }
 
+export interface LogQuery {
+  type?: string;
+  source?: string;
+  result?: string;
+  limit?: number;
+}
+
 interface LogStore {
   logs: LogEntry[];
 
-  addLog: (log: Omit<LogEntry, "id" | "timestamp">) => void;
-  clearLogs: () => void;
+  clearLogs: () => Promise<void>;
+  load: (query?: LogQuery) => Promise<void>;
 }
 
-let logId = 1;
-
-const defaultLogs: LogEntry[] = [
-  {
-    id: "log-4",
-    timestamp: new Date(Date.now() - 60000).toISOString(),
-    type: "tool_call",
-    source: "OpenCode Adapter",
-    message: "Tarea completada: crear archivo de notas",
-    result: "success",
-  },
-  {
-    id: "log-3",
-    timestamp: new Date(Date.now() - 300000).toISOString(),
-    type: "connection",
-    source: "MCP Integration",
-    message: "Conexion establecida con Custom Services endpoint",
-    result: "success",
-  },
-  {
-    id: "log-2",
-    timestamp: new Date(Date.now() - 600000).toISOString(),
-    type: "security",
-    source: "Policy Engine",
-    message: "Accion bloqueada: execute_command fuera de lista blanca",
-    result: "blocked",
-  },
-  {
-    id: "log-1",
-    timestamp: new Date(Date.now() - 900000).toISOString(),
-    type: "error",
-    source: "Terminal Runner",
-    message: "Error al ejecutar comando: timeout despues de 30s",
-    result: "error",
-  },
-];
-
 export const useLogStore = create<LogStore>((set) => ({
-  logs: defaultLogs,
+  logs: [],
 
-  addLog: (log) =>
-    set((state) => ({
-      logs: [
-        {
-          ...log,
-          id: `log-${logId++}`,
-          timestamp: new Date().toISOString(),
-        },
-        ...state.logs,
-      ],
-    })),
+  load: async (query?: LogQuery) => {
+    try {
+      const params = new URLSearchParams();
+      if (query?.type) params.set("type", query.type);
+      if (query?.source) params.set("source", query.source);
+      if (query?.result) params.set("result", query.result);
+      if (query?.limit) params.set("limit", String(query.limit));
+      const qs = params.toString();
+      const res = await fetch(`/api/logs${qs ? `?${qs}` : ""}`);
+      if (!res.ok) return;
+      const data: LogEntry[] = await res.json();
+      set({ logs: data });
+    } catch {
+      // backend not available
+    }
+  },
 
-  clearLogs: () => set({ logs: [] }),
+  clearLogs: async () => {
+    try {
+      await fetch("/api/logs", { method: "DELETE" });
+      set({ logs: [] });
+    } catch {
+      // ignore
+    }
+  },
 }));

@@ -1,4 +1,4 @@
-import { Server, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Server, Trash2, ChevronDown, ChevronRight, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -29,8 +29,10 @@ function formatDate(iso: string | null) {
 interface McpServerCardProps {
   server: McpServer;
   onToggle: () => void;
-  onRemove: () => void;
+  onRemove?: () => void;
   onToggleTool: (toolName: string) => void;
+  isVirtual?: boolean;
+  onDiscover?: () => void;
 }
 
 export default function McpServerCard({
@@ -38,8 +40,10 @@ export default function McpServerCard({
   onToggle,
   onRemove,
   onToggleTool,
+  isVirtual,
+  onDiscover,
 }: McpServerCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(isVirtual ?? false);
   const badge = statusBadge[server.status];
 
   return (
@@ -76,6 +80,17 @@ export default function McpServerCard({
             {server.tools.filter((t) => t.enabled).length}/{server.tools.length} tools activas
           </span>
           <div className="flex gap-2">
+            {onDiscover && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDiscover}
+                className="text-xs"
+              >
+                <Search className="h-3 w-3 mr-1" />
+                Descubrir
+              </Button>
+            )}
             {server.tools.length > 0 && (
               <Button
                 variant="ghost"
@@ -90,16 +105,18 @@ export default function McpServerCard({
                 )}
                 Tools
               </Button>
+              )}
+            {onRemove && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                className="text-xs text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Eliminar
+              </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              className="text-xs text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Eliminar
-            </Button>
           </div>
         </div>
         {expanded && server.tools.length > 0 && (

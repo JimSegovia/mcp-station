@@ -1,12 +1,23 @@
 import { create } from "zustand";
 
-export type McpServerType = "stdio" | "websocket";
+export type McpServerType = "stdio" | "websocket" | "virtual";
 export type McpServerStatus = "connected" | "disconnected" | "error";
 
 export interface McpServerTool {
   name: string;
   description: string;
   enabled: boolean;
+}
+
+interface McpServerStore {
+  servers: McpServer[];
+
+  addServer: (server: { name: string; type?: string; endpoint?: string }) => Promise<void>;
+  removeServer: (id: string) => Promise<void>;
+  toggleServer: (id: string) => Promise<void>;
+  toggleTool: (serverId: string, toolName: string) => Promise<void>;
+  discoverTools: (id: string) => Promise<void>;
+  load: () => Promise<void>;
 }
 
 export interface McpServer {
@@ -18,103 +29,115 @@ export interface McpServer {
   status: McpServerStatus;
   tools: McpServerTool[];
   lastConnected: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface McpServerStore {
   servers: McpServer[];
 
-  addServer: (server: Omit<McpServer, "id" | "status" | "tools" | "lastConnected">) => void;
-  removeServer: (id: string) => void;
-  toggleServer: (id: string) => void;
-  toggleTool: (serverId: string, toolName: string) => void;
-  setServerStatus: (id: string, status: McpServerStatus) => void;
+  addServer: (server: { name: string; type?: string; endpoint?: string }) => Promise<void>;
+  removeServer: (id: string) => Promise<void>;
+  toggleServer: (id: string) => Promise<void>;
+  toggleTool: (serverId: string, toolName: string) => Promise<void>;
+  load: () => Promise<void>;
 }
 
-const defaultServers: McpServer[] = [
-  {
-    id: "mcp-1",
-    name: "OpenCode Local",
-    type: "stdio",
-    endpoint: "opencode serve",
-    enabled: true,
-    status: "connected",
-    tools: [
-      { name: "bash", description: "Ejecuta comandos en la terminal", enabled: true },
-      { name: "read", description: "Lee archivos del sistema", enabled: true },
-      { name: "edit", description: "Edita archivos de texto", enabled: true },
-    ],
-    lastConnected: new Date().toISOString(),
+export const useMcpServerStore = create<McpServerStore>((set, get) => ({
+  servers: [],
+
+  load: async () => {
+    try {
+      const res = await fetch("/api/servers");
+      if (!res.ok) return;
+      const data: McpServer[] = await res.json();
+      set({ servers: data });
+    } catch {
+      // backend not available
+    }
   },
-  {
-    id: "mcp-2",
-    name: "File System Proxy",
-    type: "websocket",
-    endpoint: "ws://localhost:8081/mcp",
-    enabled: false,
-    status: "disconnected",
-    tools: [
-      { name: "list_files", description: "Lista archivos en un directorio", enabled: true },
-      { name: "move_file", description: "Mueve archivos entre directorios", enabled: false },
-    ],
-    lastConnected: null,
+
+  addServer: async (server) => {
+    try {
+      const res = await fetch("/api/servers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: server.name,
+          type: server.type || "websocket",
+          endpoint: server.endpoint || "",
+        }),
+      });
+      if (!res.ok) return;
+      const data: McpServer = await res.json();
+      set((state) => ({ servers: [...state.servers, data] }));
+    } catch {
+      // ignore
+    }
   },
-];
 
-let nextId = 3;
+  removeServer: async (id: string) => {
+    try {
+      await fetch(`/api/servers/${encodeURIComponent(id)}`, { method: "DELETE" });
+      set((state) => ({ servers: state.servers.filter((s) => s.id !== id) }));
+    } catch {
+      // ignore
+    }
+  },
 
-export const useMcpServerStore = create<McpServerStore>((set) => ({
-  servers: defaultServers,
+  toggleServer: async (id: string) => {
+    const { servers } = get();
+    const server = servers.find((s) => s.id === id);
+    if (!server) return;
 
-  addServer: (server) =>
-    set((state) => ({
-      servers: [
-        ...state.servers,
-        {
-          ...server,
-          id: `mcp-${nextId++}`,
-          status: "disconnected" as McpServerStatus,
-          tools: [],
-          lastConnected: null,
-        },
-      ],
-    })),
+    const newEnabled = !server.enabled;
+    try {
+      const res = await fetch(`/api/servers/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newEnabled }),
+      });
+      if (!res.ok) return;
+      const data: McpServer = await res.json();
+      set({
+        servers: servers.map((s) => (s.id === id ? { ...s, ...data } : s)),
+      });
+    } catch {
+      // ignore
+    }
+  },
 
-  removeServer: (id: string) =>
-    set((state) => ({
-      servers: state.servers.filter((s) => s.id !== id),
-    })),
+  toggleTool: async (serverId: string, toolName: string) => {
+    const { servers } = get();
+    const server = servers.find((s) => s.id === serverId);
+    if (!server) return;
+    const tool = server.tools.find((t) => t.name === toolName);
+    if (!tool) return;
 
-  toggleServer: (id: string) =>
-    set((state) => ({
-      servers: state.servers.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              enabled: !s.enabled,
-              status: s.enabled ? ("disconnected" as McpServerStatus) : ("connected" as McpServerStatus),
-            }
-          : s
-      ),
-    })),
+    const newEnabled = !tool.enabled;
+    try {
+      const res = await fetch(`/api/servers/${encodeURIComponent(serverId)}/tools/${encodeURIComponent(toolName)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newEnabled }),
+      });
+      if (!res.ok) return;
+      const data: McpServer = await res.json();
+      set({
+        servers: servers.map((s) => (s.id === serverId ? { ...s, ...data } : s)),
+      });
+    } catch {
+      // ignore
+    }
+  },
 
-  toggleTool: (serverId: string, toolName: string) =>
-    set((state) => ({
-      servers: state.servers.map((s) =>
-        s.id === serverId
-          ? {
-              ...s,
-              tools: s.tools.map((t) =>
-                t.name === toolName ? { ...t, enabled: !t.enabled } : t
-              ),
-            }
-          : s
-      ),
-    })),
-
-  setServerStatus: (id: string, status: McpServerStatus) =>
-    set((state) => ({
-      servers: state.servers.map((s) =>
-        s.id === id ? { ...s, status, lastConnected: status === "connected" ? new Date().toISOString() : s.lastConnected } : s
-      ),
-    })),
+  discoverTools: async (id: string) => {
+    try {
+      const res = await fetch(`/api/servers/${encodeURIComponent(id)}/discover`, { method: "POST" });
+      if (!res.ok) return;
+      get().load();
+    } catch {
+      // ignore
+    }
+  },
 }));

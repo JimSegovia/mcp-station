@@ -1,4 +1,4 @@
-import { Plug, Server, Package, ScrollText, Activity, Timer } from "lucide-react";
+import { Plug, Server, ScrollText, Activity, Timer } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -7,7 +7,6 @@ import {
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { useMcpIntegrationStore } from "@/store/mcpIntegrationStore";
-import { useModuleStore } from "@/store/moduleStore";
 import { useMcpServerStore } from "@/store/mcpServerStore";
 import { useLogStore } from "@/store/logStore";
 
@@ -21,17 +20,14 @@ function formatUptime(seconds: number) {
 
 export default function DashboardSummary() {
   const integration = useMcpIntegrationStore();
-  const { modules } = useModuleStore();
   const { servers } = useMcpServerStore();
   const { logs } = useLogStore();
 
-  const activeModules = modules.filter((m) => m.enabled).length;
-  const totalModules = modules.length;
   const activeServers = servers.filter((s) => s.enabled).length;
   const connectedServers = servers.filter((s) => s.status === "connected").length;
   const errorLogs = logs.filter((l) => l.result === "error").length;
   const healthyChecks = integration.healthChecks.filter((h) => h.level === "healthy").length;
-  const totalChecks = integration.healthChecks.length || 4;
+  const totalChecks = integration.healthChecks.length || 3;
 
   const items = [
     {
@@ -85,18 +81,6 @@ export default function DashboardSummary() {
       state: `${connectedServers}/${activeServers} conectados`,
       extra: `${servers.length} registrados`,
       badgeVariant: connectedServers > 0 ? ("success" as const) : ("secondary" as const),
-    },
-    {
-      icon: Package,
-      label: "Modulos",
-      state: `${activeModules}/${totalModules} activos`,
-      extra:
-        activeModules === 0
-          ? "Todos inactivos"
-          : activeModules === totalModules
-          ? "Todos activos"
-          : "Config. parcial",
-      badgeVariant: activeModules > 0 ? ("success" as const) : ("secondary" as const),
     },
     {
       icon: ScrollText,

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useMcpIntegrationStore } from "@/store/mcpIntegrationStore";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,19 +15,20 @@ import RecentErrorCard from "@/components/RecentErrorCard";
 export default function McpIntegration() {
   const {
     status,
+    load,
     disconnect,
-    simulateError,
-    simulateHealthDegrade,
-    restoreHealth,
-    reset,
-    tickUptime,
+    connect,
   } = useMcpIntegrationStore();
 
   useEffect(() => {
-    if (status !== "connected") return;
-    const interval = setInterval(tickUptime, 1000);
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (status !== "connecting" && status !== "connected") return;
+    const interval = setInterval(load, 1500);
     return () => clearInterval(interval);
-  }, [status, tickUptime]);
+  }, [status, load]);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -43,16 +45,21 @@ export default function McpIntegration() {
           <EmptyIntegrationState />
           <CustomServicesGuideCard />
           <McpEndpointCard />
+        </>
+      )}
 
-          <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">demo</span>
-            <Separator className="flex-1" />
+      {status === "connecting" && (
+        <>
+          <McpEndpointCard />
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+            <LoaderCircle className="h-8 w-8 animate-spin text-blue-400" />
+            <p className="text-sm text-muted-foreground">
+              Conectando con el endpoint de XiaoZhi...
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Esto puede tomar unos segundos mientras se realiza el handshake MCP
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Pega un endpoint cualquiera y presiona Conectar para probar la UI.
-            Los datos son mock locales.
-          </p>
         </>
       )}
 
@@ -64,36 +71,8 @@ export default function McpIntegration() {
           <ToolTestPanel />
           <McpEndpointCard />
 
-          <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">demo</span>
-            <Separator className="flex-1" />
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <Button
-              variant="destructive"
-              onClick={() =>
-                simulateError("Error de handshake MCP: el endpoint no respondio a initialize")
-              }
-            >
-              Simular error
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={simulateHealthDegrade}
-            >
-              Degradar health
-            </Button>
-            <Button
-              variant="outline"
-              onClick={restoreHealth}
-            >
-              Restaurar health
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={disconnect}
-            >
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={disconnect}>
               Desconectar
             </Button>
           </div>
@@ -109,14 +88,14 @@ export default function McpIntegration() {
 
           <div className="flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">demo</span>
+            <span className="text-xs text-muted-foreground">debug</span>
             <Separator className="flex-1" />
           </div>
           <div className="flex gap-3">
-            <Button className="flex-1" onClick={disconnect}>
-              Reconectar
+            <Button className="flex-1" onClick={connect}>
+              Reintentar conexion
             </Button>
-            <Button variant="outline" className="flex-1" onClick={reset}>
+            <Button variant="outline" className="flex-1" onClick={disconnect}>
               Reiniciar
             </Button>
           </div>

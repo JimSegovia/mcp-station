@@ -1,7 +1,21 @@
+import { useEffect } from "react";
+import { useMcpIntegrationStore } from "@/store/mcpIntegrationStore";
+import { useMcpServerStore } from "@/store/mcpServerStore";
+import { useLogStore } from "@/store/logStore";
 import DashboardSummary from "@/components/DashboardSummary";
 import { Separator } from "@/components/ui/separator";
 
 export default function Dashboard() {
+  const loadIntegration = useMcpIntegrationStore((s) => s.load);
+  const loadServers = useMcpServerStore((s) => s.load);
+  const loadLogs = useLogStore((s) => s.load);
+
+  useEffect(() => {
+    loadIntegration();
+    loadServers();
+    loadLogs();
+  }, [loadIntegration, loadServers, loadLogs]);
+
   return (
     <div className="max-w-5xl space-y-6">
       <div>
@@ -16,9 +30,7 @@ export default function Dashboard() {
       <Separator />
 
       <p className="text-xs text-muted-foreground text-center">
-        Los datos de este panel reflejan el estado actual de los stores
-        locales. Cuando el backend Go este integrado, estos valores se
-        sincronizaran en tiempo real via API.
+        Datos sincronizados en tiempo real desde el backend Go via API REST.
       </p>
     </div>
   );

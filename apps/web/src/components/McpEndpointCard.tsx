@@ -12,7 +12,7 @@ import {
 import { useMcpIntegrationStore } from "@/store/mcpIntegrationStore";
 
 export default function McpEndpointCard() {
-  const { status, endpoint, setEndpoint, simulateConnect } =
+  const { status, endpoint, setEndpoint, connect } =
     useMcpIntegrationStore();
   const [copied, setCopied] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -24,13 +24,11 @@ export default function McpEndpointCard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!endpoint) return;
     setConnecting(true);
-    setTimeout(() => {
-      simulateConnect();
-      setConnecting(false);
-    }, 1200);
+    await connect();
+    setConnecting(false);
   };
 
   return (

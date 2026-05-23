@@ -1,16 +1,24 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useEffect } from "react";
+import { Server } from "lucide-react";
 import { useMcpServerStore } from "@/store/mcpServerStore";
 import McpServerCard from "@/components/McpServerCard";
 import McpServerForm from "@/components/McpServerForm";
-import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function Servers() {
-  const { servers, addServer, removeServer, toggleServer, toggleTool } =
+  const { servers, load, toggleServer, toggleTool, removeServer, discoverTools } =
     useMcpServerStore();
-  const [formOpen, setFormOpen] = useState(false);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const virtualServers = servers.filter((s) => s.type === "virtual");
+  const externalServers = servers.filter((s) => s.type !== "virtual");
   const connectedCount = servers.filter((s) => s.status === "connected").length;
 
   return (
@@ -19,51 +27,57 @@ export default function Servers() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Servidores MCP</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {servers.length} servidores registrados · {connectedCount} conectados
+            {servers.length} servidores · {connectedCount} conectados
+            {virtualServers.length > 0 && ` · ${virtualServers.length} locales`}
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Agregar
-        </Button>
+        <McpServerForm />
       </div>
 
-      <McpServerForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onAdd={addServer}
-      />
-
-      {servers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
-          <p className="text-sm">No hay servidores MCP registrados.</p>
-          <p className="text-xs mt-1">
-            Usa el boton Agregar para registrar tu primer servidor.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {servers.map((server) => (
-            <McpServerCard
-              key={server.id}
-              server={server}
-              onToggle={() => toggleServer(server.id)}
-              onRemove={() => removeServer(server.id)}
-              onToggleTool={(toolName) => toggleTool(server.id, toolName)}
-            />
-          ))}
-        </div>
+      {externalServers.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Server className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">
+              No hay servidores externos registrados
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Agrega un servidor MCP externo para descubrir sus tools
+            </p>
+          </CardContent>
+        </Card>
       )}
+
+      {externalServers.map((s) => (
+        <McpServerCard
+          key={s.id}
+          server={s}
+          onToggle={() => toggleServer(s.id)}
+          onToggleTool={(toolName) => toggleTool(s.id, toolName)}
+          onRemove={() => removeServer(s.id)}
+          onDiscover={
+            s.type === "websocket"
+              ? () => discoverTools(s.id)
+              : undefined
+          }
+        />
+      ))}
 
       <div className="flex items-center gap-3">
         <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">demo</span>
+        <span className="text-xs text-muted-foreground">servidores locales</span>
         <Separator className="flex-1" />
       </div>
-      <p className="text-xs text-muted-foreground text-center">
-        Servidores mock para validar la UI. El backend Go sincronizara el
-        estado real de cada servidor MCP.
-      </p>
+
+      {virtualServers.map((s) => (
+        <McpServerCard
+          key={s.id}
+          server={s}
+          onToggle={() => toggleServer(s.id)}
+          onToggleTool={(toolName) => toggleTool(s.id, toolName)}
+          isVirtual
+        />
+      ))}
     </div>
   );
 }

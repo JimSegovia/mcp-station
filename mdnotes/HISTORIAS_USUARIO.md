@@ -181,7 +181,78 @@ Criterios de aceptacion:
 - debe poder cambiarse el estado de un MCP
 - el sistema debe reflejar el cambio sin editar archivos manualmente
 
-## Epica 6: Seguridad minima de la v1
+## Epica 6: Catalogo e instalacion de servidores MCP
+
+Inspirado en MCP Router: un marketplace de servidores MCP que el usuario puede explorar, instalar con un click, y gestionar como procesos locales.
+
+### HU-021 Explorar el catalogo de servidores MCP
+
+Como usuario, quiero explorar un catalogo de servidores MCP disponibles, para descubrir nuevas capacidades que pueda agregar a mi estacion sin buscar en internet.
+
+Criterios de aceptacion:
+
+- debe existir una vista de catalogo con servidores disponibles
+- cada item del catalogo muestra nombre, descripcion, autor, tools que expone
+- debe poder filtrarse por categoria (filesystem, APIs, desarrollo, productividad)
+- el sistema debe indicar si un servidor ya esta instalado
+
+### HU-022 Instalar un servidor MCP con un click
+
+Como usuario, quiero instalar un servidor MCP desde el catalogo con un solo click, para no tener que clonar repos, instalar dependencias ni configurar manualmente.
+
+Criterios de aceptacion:
+
+- al hacer click en "Instalar", el sistema debe clonar/descargar el servidor
+- debe instalar sus dependencias automaticamente (npm/pip/cargo segun corresponda)
+- debe registrar el servidor en la tabla de servidores locales
+- debe mostrar progreso de instalacion (descargando, instalando dependencias, listo)
+- si la instalacion falla, debe mostrar un error claro
+
+### HU-023 Arrancar y detener servidores MCP
+
+Como usuario, quiero iniciar o detener un servidor MCP instalado desde la interfaz, para controlar cuando consume recursos de mi maquina.
+
+Criterios de aceptacion:
+
+- debe existir un boton "Iniciar" / "Detener" por servidor
+- al iniciar, el sistema levanta el proceso y muestra el PID
+- al detener, el sistema termina el proceso limpiamente
+- el estado del proceso debe reflejarse en tiempo real (running, stopped, error)
+- si el proceso muere inesperadamente, debe marcarse como "error" y permitir reinicio
+
+### HU-024 Ver las tools expuestas por un servidor instalado
+
+Como usuario, quiero ver que tools expone un servidor MCP instalado, para saber exactamente que capacidades nuevas agrega antes de activarlo.
+
+Criterios de aceptacion:
+
+- al seleccionar un servidor, debe listar sus tools con nombre y descripcion
+- las tools deben poder activarse/desactivarse individualmente
+- si el servidor esta corriendo, las tools deben consultarse en tiempo real via MCP handshake
+
+### HU-025 Desinstalar un servidor MCP
+
+Como usuario, quiero desinstalar un servidor MCP que ya no necesito, para liberar espacio y mantener limpia mi estacion.
+
+Criterios de aceptacion:
+
+- debe existir una accion "Desinstalar"
+- debe eliminar el directorio y dependencias del servidor
+- debe remover el registro de la DB local
+- debe advertir si el servidor esta en ejecucion antes de desinstalar
+
+### HU-026 Sincronizar catalogo desde repositorio remoto
+
+Como usuario, quiero que el catalogo de servidores MCP se actualice periodicamente desde un repositorio oficial, para ver nuevos servidores sin actualizar la app.
+
+Criterios de aceptacion:
+
+- el catalogo debe cargarse desde un JSON/API remota (ej: un repo GitHub)
+- debe existir un boton "Actualizar catalogo"
+- los servidores instalados no deben perderse al actualizar el catalogo
+- debe mostrar la fecha de ultima sincronizacion
+
+## Epica 7: Seguridad minima de la v1
 
 ### HU-016 Bloquear acciones peligrosas por defecto
 
@@ -211,7 +282,7 @@ Criterios de aceptacion:
 - deben registrarse errores de ejecucion
 - debe existir una vista minima de logs
 
-## Epica 7: Interfaz de administracion v1
+## Epica 8: Interfaz de administracion v1
 
 ### HU-019 Tener una interfaz local de administracion
 
@@ -263,6 +334,8 @@ Historias muy importantes para que el producto ya se sienta administrable y exte
 - `HU-014` Ver los MCPs conectados
 - `HU-015` Activar o desactivar un MCP
 - `HU-018` Ver errores y eventos importantes
+- `HU-021` Explorar el catalogo de servidores MCP
+- `HU-022` Instalar un servidor MCP con un click
 
 ### P2
 
@@ -271,6 +344,13 @@ Historias valiosas, pero no criticas para validar el primer corte.
 - `HU-006` Ver el historial reciente de conexion MCP
 - `HU-009` Diferenciar acciones de lectura y escritura
 - `HU-012` Ver si un modulo fallo
+- `HU-023` Arrancar y detener servidores MCP
+- `HU-024` Ver las tools expuestas por un servidor instalado
+- `HU-025` Desinstalar un servidor MCP
+
+### P3 (futuro)
+
+- `HU-026` Sincronizar catalogo desde repositorio remoto
 
 ## Descomposiciones separadas
 

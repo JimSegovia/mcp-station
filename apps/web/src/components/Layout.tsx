@@ -1,12 +1,13 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { LayoutDashboard, Plug, Package, Server, ScrollText } from "lucide-react";
+import { LayoutDashboard, Plug, Server, ScrollText, Activity, Bot } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Resumen" },
   { to: "/mcp", icon: Plug, label: "Integracion MCP" },
-  { to: "/modulos", icon: Package, label: "Modulos" },
   { to: "/servidores", icon: Server, label: "Servidores MCP" },
+  { to: "/opencode", icon: Bot, label: "Sesiones" },
   { to: "/logs", icon: ScrollText, label: "Logs" },
+  { to: "/monitor", icon: Activity, label: "Monitor" },
 ];
 
 export default function Layout() {
