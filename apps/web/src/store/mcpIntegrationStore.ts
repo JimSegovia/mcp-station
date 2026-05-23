@@ -1,8 +1,19 @@
 import { create } from "zustand";
 
-export type IntegrationStatus = "empty" | "connecting" | "connected" | "error";
+export type IntegrationStatus =
+  | "empty"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "error";
 
-export type HealthLevel = "healthy" | "degraded" | "unhealthy";
+export type HealthLevel =
+  | "healthy"
+  | "degraded"
+  | "unhealthy"
+  | "pending"
+  | "info"
+  | "unknown";
 
 export interface HealthCheck {
   label: string;
@@ -19,6 +30,41 @@ export interface McpTool {
 export interface ConnectionError {
   message: string;
   timestamp: string;
+}
+
+interface IntegrationApiResponse {
+  status?: string;
+  endpoint?: string;
+  tools?: McpTool[];
+  lastConnected?: string | null;
+  lastError?: string | null;
+  serverPort?: number;
+  protocolVersion?: string;
+  uptime?: number;
+  latency?: number;
+  healthChecks?: HealthCheck[];
+  updatedAt?: string;
+}
+
+function normalizeStatus(status?: string): IntegrationStatus {
+  switch (status) {
+    case "connecting":
+    case "connected":
+    case "disconnected":
+    case "error":
+    case "empty":
+      return status;
+    default:
+      return "empty";
+  }
+}
+
+function normalizeError(data: IntegrationApiResponse): ConnectionError | null {
+  if (!data.lastError) return null;
+  return {
+    message: data.lastError,
+    timestamp: data.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 interface McpIntegrationStore {
@@ -60,13 +106,13 @@ export const useMcpIntegrationStore = create<McpIntegrationStore>((set, get) => 
     try {
       const res = await fetch("/api/integration");
       if (!res.ok) return;
-      const data = await res.json();
+      const data: IntegrationApiResponse = await res.json();
       set({
-        status: data.status ?? "empty",
+        status: normalizeStatus(data.status),
         endpoint: data.endpoint ?? "",
         tools: data.tools ?? [],
         lastConnected: data.lastConnected ?? null,
-        lastError: data.lastError ?? null,
+        lastError: normalizeError(data),
         serverPort: data.serverPort ?? 8090,
         protocolVersion: data.protocolVersion ?? "MCP/JSON-RPC 2.0",
         uptime: data.uptime ?? 0,
@@ -92,10 +138,19 @@ export const useMcpIntegrationStore = create<McpIntegrationStore>((set, get) => 
         body: JSON.stringify({ endpoint }),
       });
       if (!res.ok) {
-        set({ status: "error", lastError: { message: "Connection failed", timestamp: new Date().toISOString() } });
+        let message = "Connection failed";
+        try {
+          const data = await res.json();
+          if (typeof data?.error === "string" && data.error) {
+            message = data.error;
+          }
+        } catch {
+          // ignore parse errors
+        }
+        set({ status: "error", lastError: { message, timestamp: new Date().toISOString() } });
         return;
       }
-      load();
+      await load();
     } catch {
       set({ status: "error", lastError: { message: "Network error", timestamp: new Date().toISOString() } });
     }
@@ -106,14 +161,14 @@ export const useMcpIntegrationStore = create<McpIntegrationStore>((set, get) => 
     try {
       const res = await fetch("/api/integration/disconnect", { method: "POST" });
       if (!res.ok) return;
-      load();
+      await load();
     } catch {
       // ignore
     }
   },
 
   toggleTool: async (toolName: string) => {
-    const { tools } = get();
+    const { tools, load } = get();
     const tool = tools.find((t) => t.name === toolName);
     if (!tool) return;
 
@@ -129,6 +184,7 @@ export const useMcpIntegrationStore = create<McpIntegrationStore>((set, get) => 
       set({
         tools: data.tools ?? tools.map((t) => (t.name === toolName ? { ...t, enabled: newEnabled } : t)),
       });
+      await load();
     } catch {
       // ignore
     }
