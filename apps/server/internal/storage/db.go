@@ -80,6 +80,14 @@ func migrate() {
 			created_at TEXT NOT NULL DEFAULT (datetime('now')),
 			last_used_at TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
+		`CREATE TABLE IF NOT EXISTS logs (
+			id TEXT PRIMARY KEY,
+			timestamp TEXT NOT NULL,
+			type TEXT NOT NULL,
+			source TEXT NOT NULL,
+			message TEXT NOT NULL,
+			result TEXT NOT NULL
+		)`,
 	}
 
 	for _, q := range queries {
