@@ -25,7 +25,9 @@ Thumbs.db
 npm-debug.log*
 
 # Server
-Server/
+apps/server/server
+apps/server/server.exe
+apps/server/data/
 
 # Gemini
 .gemini/
