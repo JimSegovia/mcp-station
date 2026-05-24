@@ -126,6 +126,27 @@ func (r *Registry) RegisterExternalTools(origin string, tools []ExternalToolDef)
 	}
 }
 
+func (r *Registry) RegisterManagedTools(origin string, tools []ExternalToolDef, executor func(name string, args map[string]interface{}) (string, error)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	prefix := origin + "_"
+	for _, t := range tools {
+		toolDef := t
+		key := prefix + t.Name
+		r.tools[key] = &Tool{
+			Name:        key,
+			Description: toolDef.Description,
+			Origin:      origin,
+			Enabled:     true,
+			InputSchema: toolDef.InputSchema,
+			Execute: func(args map[string]interface{}) (string, error) {
+				return executor(toolDef.Name, args)
+			},
+		}
+	}
+}
+
 func (r *Registry) RemoveToolsByOrigin(origin string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -344,7 +365,7 @@ func (r *Registry) registerOpenCodeTools() {
 
 	r.Register(&Tool{
 		Name:        "opencode_ask",
-		Description: "Conversa con OpenCode y reutiliza la sesion reciente de XiaoZhi; espera la respuesta final",
+		Description: "Conversa con OpenCode, reutiliza la sesion reciente de XiaoZhi y al terminar devuelve una instruccion explicita de standby",
 		Origin:      "opencode",
 		Enabled:     true,
 		InputSchema: map[string]interface{}{
@@ -367,15 +388,67 @@ func (r *Registry) registerOpenCodeTools() {
 				return "", fmt.Errorf("prompt is required")
 			}
 			agent, _ := args["agent"].(string)
-			result, err := client.AskWithScopedSession(opencode.XiaoZhiMCPScopeKey, prompt, agent, "", opencode.XiaoZhiMCPMaxIdle)
+			result, err := client.AskWithScopedSessionDeferred(
+				opencode.XiaoZhiMCPScopeKey,
+				prompt,
+				agent,
+				"",
+				opencode.XiaoZhiMCPMaxIdle,
+				opencode.XiaoZhiAskDeferAfter,
+			)
 			if err != nil {
 				return "", fmt.Errorf("opencode ask failed: %w", err)
 			}
-			if result.Text == "" {
+			if result.Started {
+				sessionID := result.SessionID
+				if result.Result != nil && result.Result.SessionID != "" {
+					sessionID = result.Result.SessionID
+				}
+				if sessionID != "" {
+					storage.TrackOpenCodeSession(sessionID, "opencode_ask", prompt)
+				}
+			}
+			if result.Deferred {
+				if result.Started {
+					return "OpenCode sigue procesando tu solicitud. Pregunta luego usando opencode_check_last.", nil
+				}
+				return "OpenCode sigue procesando una solicitud anterior. Usa opencode_check_last para revisar cuando termine.", nil
+			}
+			if result.Result == nil || result.Result.Text == "" {
 				return "OpenCode returned an empty response", nil
 			}
-			storage.TrackOpenCodeSession(result.SessionID, "opencode_ask", prompt)
-			return result.Text, nil
+			return strings.TrimSpace(result.Result.Text) + "\n\n" + opencode.XiaoZhiStandbyInstruction, nil
+		},
+	})
+
+	r.Register(&Tool{
+		Name:        "opencode_check_last",
+		Description: "Lee el ultimo mensaje final del assistant en la sesion activa compartida de XiaoZhi sin crear una sesion nueva",
+		Origin:      "opencode",
+		Enabled:     true,
+		InputSchema: map[string]interface{}{
+			"type":       "object",
+			"properties": map[string]interface{}{},
+		},
+		Execute: func(args map[string]interface{}) (string, error) {
+			text, err := client.GetScopedSessionLastAssistantText(opencode.XiaoZhiMCPScopeKey)
+			if err != nil {
+				if opencode.IsOpenCodeSessionNotFoundError(err) {
+					return "La sesion activa de XiaoZhi ya no existe en OpenCode.", nil
+				}
+				return "", fmt.Errorf("opencode check last failed: %w", err)
+			}
+			if text == "" {
+				binding, bindingErr := storage.GetOpenCodeSessionBinding(opencode.XiaoZhiMCPScopeKey)
+				if bindingErr != nil {
+					return "", fmt.Errorf("load scoped session binding: %w", bindingErr)
+				}
+				if binding == nil {
+					return "No hay una sesion activa de XiaoZhi en OpenCode.", nil
+				}
+				return "La sesion existe pero aun no hay respuesta final de OpenCode.", nil
+			}
+			return text, nil
 		},
 	})
 
@@ -536,7 +609,7 @@ func (r *Registry) ToolsByOrigin(origin string) []model.McpTool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var tools []model.McpTool
+	tools := make([]model.McpTool, 0)
 	for _, t := range r.tools {
 		if t.Origin == origin {
 			tools = append(tools, model.McpTool{

@@ -26,6 +26,9 @@ func GetServers() ([]model.Server, error) {
 		}
 		s.Enabled = enabled == 1
 		json.Unmarshal([]byte(tp), &s.Tools)
+		if s.Tools == nil {
+			s.Tools = make([]model.McpTool, 0)
+		}
 		servers = append(servers, s)
 	}
 
@@ -52,6 +55,9 @@ func GetServerByID(id string) (*model.Server, error) {
 	}
 	s.Enabled = enabled == 1
 	json.Unmarshal([]byte(tp), &s.Tools)
+	if s.Tools == nil {
+		s.Tools = make([]model.McpTool, 0)
+	}
 	return &s, nil
 }
 
