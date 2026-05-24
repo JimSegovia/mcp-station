@@ -14,6 +14,7 @@ import type { McpServer } from "@/store/mcpServerStore";
 
 const statusBadge: Record<string, { label: string; variant: "success" | "destructive" | "secondary" }> = {
   connected: { label: "Conectado", variant: "success" },
+  connecting: { label: "Conectando", variant: "secondary" },
   disconnected: { label: "Desconectado", variant: "secondary" },
   error: { label: "Error", variant: "destructive" },
 };
@@ -44,7 +45,7 @@ export default function McpServerCard({
   onDiscover,
 }: McpServerCardProps) {
   const [expanded, setExpanded] = useState(isVirtual ?? false);
-  const badge = statusBadge[server.status];
+  const badge = statusBadge[server.status] ?? statusBadge.disconnected;
 
   return (
     <Card>
@@ -77,7 +78,7 @@ export default function McpServerCard({
         <Separator />
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {server.tools.filter((t) => t.enabled).length}/{server.tools.length} tools activas
+            {(server.tools || []).filter((t) => t.enabled).length}/{(server.tools || []).length} tools activas
           </span>
           <div className="flex gap-2">
             {onDiscover && (
@@ -91,7 +92,7 @@ export default function McpServerCard({
                 Descubrir
               </Button>
             )}
-            {server.tools.length > 0 && (
+            {(server.tools || []).length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -119,9 +120,9 @@ export default function McpServerCard({
             )}
           </div>
         </div>
-        {expanded && server.tools.length > 0 && (
+        {expanded && (server.tools || []).length > 0 && (
           <div className="space-y-1.5 pt-2">
-            {server.tools.map((tool) => (
+            {(server.tools || []).map((tool) => (
               <div key={tool.name} className="flex items-center justify-between gap-2 py-1">
                 <div className="min-w-0">
                   <code className="text-xs font-mono text-foreground">{tool.name}</code>

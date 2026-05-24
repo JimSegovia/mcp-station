@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type McpServerType = "stdio" | "websocket" | "virtual";
-export type McpServerStatus = "connected" | "disconnected" | "error";
+export type McpServerStatus = "connected" | "connecting" | "disconnected" | "error";
 
 export interface McpServerTool {
   name: string;
@@ -31,16 +31,6 @@ export interface McpServer {
   lastConnected: string | null;
   createdAt?: string;
   updatedAt?: string;
-}
-
-interface McpServerStore {
-  servers: McpServer[];
-
-  addServer: (server: { name: string; type?: string; endpoint?: string }) => Promise<void>;
-  removeServer: (id: string) => Promise<void>;
-  toggleServer: (id: string) => Promise<void>;
-  toggleTool: (serverId: string, toolName: string) => Promise<void>;
-  load: () => Promise<void>;
 }
 
 export const useMcpServerStore = create<McpServerStore>((set, get) => ({
@@ -111,7 +101,7 @@ export const useMcpServerStore = create<McpServerStore>((set, get) => ({
     const { servers } = get();
     const server = servers.find((s) => s.id === serverId);
     if (!server) return;
-    const tool = server.tools.find((t) => t.name === toolName);
+    const tool = (server.tools || []).find((t) => t.name === toolName);
     if (!tool) return;
 
     const newEnabled = !tool.enabled;
