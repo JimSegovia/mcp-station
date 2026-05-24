@@ -13,6 +13,7 @@ import (
 	"github.com/mcp-station/server/internal/mcp"
 	"github.com/mcp-station/server/internal/model"
 	"github.com/mcp-station/server/internal/opencode"
+	"github.com/mcp-station/server/internal/playwright"
 	"github.com/mcp-station/server/internal/storage"
 	"github.com/mcp-station/server/internal/tool"
 )
@@ -21,6 +22,7 @@ func main() {
 	port := flag.String("port", "8080", "HTTP server port")
 	opencodePort := flag.Int("opencode-port", 4096, "OpenCode serve port")
 	opencodeBin := flag.String("opencode-bin", "", "Path to opencode binary (auto-detect if empty, uses wsl on Windows)")
+	playwrightPort := flag.Int("playwright-port", 0, "Fixed port for Playwright MCP (0 for dynamic)")
 	flag.Parse()
 
 	storage.Init()
@@ -32,15 +34,17 @@ func main() {
 		os.Getenv("OPENCODE_SERVER_PASSWORD"),
 		*opencodeBin,
 	)
+	pwManager := playwright.NewManager("", nil, *playwrightPort)
 
 	syncIntegrationTools(registry)
 
 	runtime := mcp.NewRuntime(registry)
 	client := mcp.NewClient(registry)
 
-	handler := api.NewRouter(runtime, registry, client, ocManager)
+	handler := api.NewRouter(runtime, registry, client, ocManager, pwManager)
 
 	defer ocManager.Stop()
+	defer pwManager.Stop()
 
 	go runSessionCleanup(ocManager)
 
