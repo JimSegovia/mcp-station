@@ -24,17 +24,18 @@ export const useOpenCodeSessionStore = create<OpenCodeSessionStore>((set, get) =
   loading: false,
 
   load: async () => {
+    if (get().loading) return;
     set({ loading: true });
     try {
       const res = await fetch("/api/opencode/sessions");
       if (!res.ok) {
-        set({ sessions: [], loading: false });
+        set({ loading: false });
         return;
       }
       const data: OpenCodeSession[] = await res.json();
       set({ sessions: data, loading: false });
     } catch {
-      set({ sessions: [], loading: false });
+      set({ loading: false });
     }
   },
 
