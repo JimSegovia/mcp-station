@@ -15,26 +15,16 @@ import RecentErrorCard from "@/components/RecentErrorCard";
 export default function McpIntegration() {
   const {
     status,
-    load,
+    startLiveUpdates,
+    stopLiveUpdates,
     disconnect,
     connect,
   } = useMcpIntegrationStore();
 
   useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    if (
-      status !== "connecting" &&
-      status !== "connected" &&
-      status !== "disconnected"
-    ) {
-      return;
-    }
-    const interval = setInterval(load, 1500);
-    return () => clearInterval(interval);
-  }, [status, load]);
+    void startLiveUpdates();
+    return () => stopLiveUpdates();
+  }, [startLiveUpdates, stopLiveUpdates]);
 
   const showRecoveryState =
     status === "error" || status === "disconnected";
