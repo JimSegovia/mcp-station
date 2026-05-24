@@ -31,3 +31,4 @@ apps/server/data/
 
 # Gemini
 .gemini/
+.opencode/
